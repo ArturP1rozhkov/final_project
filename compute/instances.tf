@@ -1,16 +1,6 @@
 # compute/instances.tf
 
-# --- 1. Адрес бастиона ---
-
-resource "yandex_vpc_address" "bastion" {
-  name = var.bastion_name
-
-  external_ipv4_address {
-    zone_id = "ru-central1-a"
-  }
-}
-
-# --- 2. Бастион ---
+# --- 1. Бастион ---
 
 resource "yandex_compute_instance" "bastion" {
   name        = var.bastion_name
@@ -35,7 +25,7 @@ resource "yandex_compute_instance" "bastion" {
   network_interface {
     subnet_id          = data.terraform_remote_state.infra.outputs.subnet_ids["ru-central1-a"]
     nat                = true
-    nat_ip_address     = yandex_vpc_address.bastion.external_ipv4_address[0].address
+    nat_ip_address     = data.terraform_remote_state.infra.outputs.bastion_ip
     security_group_ids = [data.terraform_remote_state.infra.outputs.bastion_sg_id]
   }
 
@@ -52,7 +42,7 @@ resource "yandex_compute_instance" "bastion" {
   allow_stopping_for_update = true
 }
 
-# --- 3. Мастер ---
+# --- 2. Мастер ---
 
 resource "yandex_compute_instance" "master" {
   name        = "final-project-master"
@@ -92,7 +82,7 @@ resource "yandex_compute_instance" "master" {
   allow_stopping_for_update = true
 }
 
-# --- 4. Ноды ---
+# --- 3. Ноды ---
 
 resource "yandex_compute_instance" "node" {
   for_each = toset(["ru-central1-d", "ru-central1-e"])

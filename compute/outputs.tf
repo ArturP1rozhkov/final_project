@@ -1,11 +1,11 @@
 # compute/outputs.tf
 
 output "bastion_ip" {
-  value = yandex_vpc_address.bastion.external_ipv4_address[0].address
+  value = data.terraform_remote_state.infra.outputs.bastion_ip
 }
 
 output "alb_ip" {
-  value = yandex_alb_load_balancer.this.listener[0].endpoint[0].address[0].external_ipv4_address[0].address
+  value = data.terraform_remote_state.infra.outputs.alb_ip
 }
 
 output "alb_router_id" {
@@ -33,7 +33,7 @@ output "ssh_private_key_path" {
 
 output "ssh_config" {
   value = templatefile("${path.module}/ssh_config.tpl", {
-    bastion_ip           = yandex_vpc_address.bastion.external_ipv4_address[0].address
+    bastion_ip           = data.terraform_remote_state.infra.outputs.bastion_ip
     ansible_user         = var.ansible_user
     ssh_private_key_path = var.ssh_private_key_path
   })

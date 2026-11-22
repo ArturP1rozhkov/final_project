@@ -125,10 +125,13 @@ resource "yandex_alb_load_balancer" "this" {
     name = "http"
 
     endpoint {
-      address {
-        external_ipv4_address {}
-      }
       ports = [80]
+
+      address {
+        external_ipv4_address {
+          address = data.terraform_remote_state.infra.outputs.alb_ip
+        }
+      }
     }
 
     http {
