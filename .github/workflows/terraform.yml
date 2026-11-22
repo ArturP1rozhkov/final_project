@@ -2,29 +2,38 @@
 
 name: terraform
 
-# включается на этапе CI/CD, после добавления секретов YC_SA_KEY_JSON,
-# YC_REGISTRY_ID, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY и KUBE_CONFIG
 on:
-  workflow_dispatch:
+  pull_request:
+    paths:
+      - "infra/**"
+      - "compute/**"
+      - ".github/workflows/terraform.yml"
+  push:
+    branches: [main]
+    paths:
+      - "infra/**"
+      - "compute/**"
+      - ".github/workflows/terraform.yml"
 
 permissions:
   contents: read
+  pull-requests: write
 
 env:
   TF_IN_AUTOMATION: "true"
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  TF_VAR_admin_cidr: ${{ secrets.ADMIN_CIDR }}
-  TF_VAR_state_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  TF_VAR_state_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  TF_VAR_ssh_public_key_path: ${{ github.workspace }}/.ssh/id_k8s.pub
+  YC_SA_KEY_JSON: ${{ secrets.YC_SA_KEY_JSON }}
 
 jobs:
   terraform:
+    # PR из форков не имеет доступа к секретам
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
+        # bootstrap в CI не участвует: у него локальный стейт
         root: [infra, compute]
     defaults:
       run:
@@ -34,24 +43,34 @@ jobs:
 
       - uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "1.12.0"
+          terraform_version: "1.17.0"
 
-      - name: сервисный ключ и публичный ssh-ключ
+      - name: ключ сервисного аккаунта
+        working-directory: .
+        run: |
+          mkdir -p ~/.yc
+          printf '%s' "$YC_SA_KEY_JSON" > ~/.yc/authorized_key.json
+          chmod 600 ~/.yc/authorized_key.json
+
+      - name: публичный ssh-ключ
+        if: matrix.root == 'compute'
         working-directory: .
         env:
-          YC_SA_KEY_JSON: ${{ secrets.YC_SA_KEY_JSON }}
-          SSH_PUBLIC_KEY: ${{ secrets.SSH_PUBLIC_KEY }}
+          SSH_PUBLIC_KEY: ${{ vars.SSH_PUBLIC_KEY }}
         run: |
-          mkdir -p ~/.yc ~/.ssh
-          printf '%s' "$YC_SA_KEY_JSON" > ~/.yc/authorized_key.json
-          printf '%s\n' "$SSH_PUBLIC_KEY" > ~/.ssh/id_k8s.pub
+          mkdir -p .ssh
+          printf '%s\n' "$SSH_PUBLIC_KEY" > .ssh/id_k8s.pub
 
       - name: backend.hcl
+        env:
+          STATE_BUCKET: ${{ vars.STATE_BUCKET }}
         run: |
-          cat > backend.hcl <<EOF
-          bucket = "final-project-tfstate-b1g3g3a6ro9rr9hd0mvm"
-          key    = "${{ matrix.root }}/terraform.tfstate"
-          region = "ru-central1"
+          cat > .backend.hcl <<EOF
+          bucket     = "$STATE_BUCKET"
+          key        = "${{ matrix.root }}/terraform.tfstate"
+          region     = "ru-central1"
+          access_key = "$AWS_ACCESS_KEY_ID"
+          secret_key = "$AWS_SECRET_ACCESS_KEY"
 
           endpoints = {
             s3 = "https://storage.yandexcloud.net"
@@ -63,21 +82,66 @@ jobs:
           skip_s3_checksum            = true
           EOF
 
+      - name: terraform.tfvars
+        env:
+          YC_CLOUD_ID: ${{ vars.YC_CLOUD_ID }}
+          YC_FOLDER_ID: ${{ vars.YC_FOLDER_ID }}
+          ADMIN_CIDR: ${{ vars.ADMIN_CIDR }}
+        run: |
+          if [ "${{ matrix.root }}" = "infra" ]; then
+            cat > terraform.tfvars <<EOF
+          cloud_id   = "$YC_CLOUD_ID"
+          folder_id  = "$YC_FOLDER_ID"
+          admin_cidr = "$ADMIN_CIDR"
+          EOF
+          else
+            cat > terraform.tfvars <<EOF
+          cloud_id            = "$YC_CLOUD_ID"
+          folder_id           = "$YC_FOLDER_ID"
+          state_access_key    = "$AWS_ACCESS_KEY_ID"
+          state_secret_key    = "$AWS_SECRET_ACCESS_KEY"
+          ssh_public_key_path = "$GITHUB_WORKSPACE/.ssh/id_k8s.pub"
+          EOF
+          fi
+
       - name: fmt
         run: terraform fmt -check -recursive .
 
       - name: init
-        run: terraform init -input=false -backend-config=backend.hcl
+        run: terraform init -input=false -backend-config=.backend.hcl
 
       - name: validate
         run: terraform validate -no-color
 
       - name: plan
+        run: |
+          terraform plan -no-color -input=false -out=tfplan
+          terraform show -no-color tfplan > plan.txt
+
+      - name: комментарий с планом
         if: github.event_name == 'pull_request'
-        run: terraform plan -no-color -input=false -out=tfplan
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const root = '${{ matrix.root }}';
+            let plan = fs.readFileSync(`${root}/plan.txt`, 'utf8');
+            if (plan.length > 60000) {
+              plan = plan.slice(0, 60000) + '\n... план обрезан';
+            }
+            const body = [
+              `### terraform plan: ${root}`,
+              '```',
+              plan,
+              '```',
+            ].join('\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
 
       - name: apply
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          terraform plan -no-color -input=false -out=tfplan
-          terraform apply -no-color -input=false tfplan
+        run: terraform apply -no-color -input=false -auto-approve tfplan
