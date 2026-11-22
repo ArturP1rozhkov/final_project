@@ -14,6 +14,12 @@ resource "yandex_vpc_security_group" "k8s" {
   network_id  = yandex_vpc_network.this.id
 }
 
+resource "yandex_vpc_security_group" "alb" {
+  name        = "final-project-alb"
+  description = "Application load balancer"
+  network_id  = yandex_vpc_network.this.id
+}
+
 # --- 2. Правила бастиона ---
 
 resource "yandex_vpc_security_group_rule" "bastion_ssh" {
@@ -74,27 +80,46 @@ resource "yandex_vpc_security_group_rule" "k8s_self" {
   predefined_target      = "self_security_group"
 }
 
-# трафик балансировщика на ingress-nginx
-resource "yandex_vpc_security_group_rule" "k8s_nodeport_http" {
+# ALB ходит к целям со своих адресов, поэтому источник — его группа безопасности
+resource "yandex_vpc_security_group_rule" "k8s_app_nodeport" {
   security_group_binding = yandex_vpc_security_group.k8s.id
   direction              = "ingress"
-  description            = "NLB to ingress http"
+  description            = "ALB to app NodePort"
   protocol               = "TCP"
   port                   = 30080
-  predefined_target      = "loadbalancer_healthchecks"
+  security_group_id      = yandex_vpc_security_group.alb.id
 }
 
-resource "yandex_vpc_security_group_rule" "k8s_nodeport_https" {
+resource "yandex_vpc_security_group_rule" "k8s_grafana_nodeport" {
   security_group_binding = yandex_vpc_security_group.k8s.id
   direction              = "ingress"
-  description            = "NLB to ingress https"
+  description            = "ALB to grafana NodePort"
   protocol               = "TCP"
-  port                   = 30443
-  predefined_target      = "loadbalancer_healthchecks"
+  port                   = 30081
+  security_group_id      = yandex_vpc_security_group.alb.id
 }
 
 resource "yandex_vpc_security_group_rule" "k8s_egress" {
   security_group_binding = yandex_vpc_security_group.k8s.id
+  direction              = "egress"
+  description            = "All outbound"
+  protocol               = "ANY"
+  v4_cidr_blocks         = ["0.0.0.0/0"]
+}
+
+# --- 4. Правила балансировщика ---
+
+resource "yandex_vpc_security_group_rule" "alb_ingress" {
+  security_group_binding = yandex_vpc_security_group.alb.id
+  direction              = "ingress"
+  description            = "Public HTTP"
+  protocol               = "TCP"
+  port                   = 80
+  v4_cidr_blocks         = ["0.0.0.0/0"]
+}
+
+resource "yandex_vpc_security_group_rule" "alb_egress" {
+  security_group_binding = yandex_vpc_security_group.alb.id
   direction              = "egress"
   description            = "All outbound"
   protocol               = "ANY"

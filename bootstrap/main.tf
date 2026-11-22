@@ -15,6 +15,7 @@ locals {
     "k8s.admin",
     "container-registry.admin",
     "load-balancer.admin",
+    "alb.admin",
   ])
 }
 

@@ -16,11 +16,3 @@ metadata:
   labels:
     # node-exporter работает с hostNetwork и hostPort
     pod-security.kubernetes.io/enforce: privileged
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: ingress-nginx
-  labels:
-    # контроллер слушает 80 и 443 прямо на хосте
-    pod-security.kubernetes.io/enforce: privileged

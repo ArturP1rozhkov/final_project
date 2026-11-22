@@ -4,8 +4,12 @@ output "bastion_ip" {
   value = yandex_vpc_address.bastion.external_ipv4_address[0].address
 }
 
-output "lb_ip" {
-  value = one(flatten([for listener in yandex_lb_network_load_balancer.ingress.listener : listener.external_address_spec[*].address]))
+output "alb_ip" {
+  value = yandex_alb_load_balancer.this.listener[0].endpoint[0].address[0].external_ipv4_address[0].address
+}
+
+output "alb_router_id" {
+  value = yandex_alb_http_router.this.id
 }
 
 output "master_ip" {

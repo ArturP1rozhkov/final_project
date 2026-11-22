@@ -17,17 +17,22 @@ grafana:
   enabled: true
   persistence:
     enabled: false
+  serviceMonitor:
+    enabled: false
+  service:
+    type: NodePort
+    nodePort: 30081
   grafana.ini:
     server:
       root_url: "%(protocol)s://%(domain)s/grafana"
       serve_from_sub_path: true
   resources:
     requests:
-      cpu: 50m
-      memory: 128Mi
-    limits:
-      cpu: 200m
+      cpu: 100m
       memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
 
 alertmanager:
   enabled: true
@@ -48,6 +53,10 @@ kubeEtcd:
 kubeControllerManager:
   enabled: false
 kubeScheduler:
+  enabled: false
+
+# kube-proxy на kubespray слушает метрики на 127.0.0.1:10249
+kubeProxy:
   enabled: false
 
 prometheus-node-exporter:

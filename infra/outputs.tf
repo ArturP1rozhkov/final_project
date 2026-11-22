@@ -16,6 +16,10 @@ output "k8s_sg_id" {
   value = yandex_vpc_security_group.k8s.id
 }
 
+output "alb_sg_id" {
+  value = yandex_vpc_security_group.alb.id
+}
+
 output "registry_id" {
   value = yandex_container_registry.this.id
 }
