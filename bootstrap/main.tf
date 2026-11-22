@@ -39,48 +39,7 @@ resource "yandex_iam_service_account_static_access_key" "tf_backend" {
   description        = "terraform backend"
 }
 
-# --- 3. Сервисный аккаунт кластера ---
-
-resource "yandex_iam_service_account" "k8s_cluster" {
-  name        = "k8s-cluster"
-  description = "Managed Kubernetes master"
-  folder_id   = var.folder_id
-}
-
-resource "yandex_resourcemanager_folder_iam_member" "k8s_cluster_agent" {
-  folder_id = var.folder_id
-  role      = "k8s.clusters.agent"
-  member    = "serviceAccount:${yandex_iam_service_account.k8s_cluster.id}"
-}
-
-resource "yandex_resourcemanager_folder_iam_member" "k8s_cluster_vpc" {
-  folder_id = var.folder_id
-  role      = "vpc.publicAdmin"
-  member    = "serviceAccount:${yandex_iam_service_account.k8s_cluster.id}"
-}
-
-resource "yandex_resourcemanager_folder_iam_member" "k8s_cluster_lb" {
-  folder_id = var.folder_id
-  role      = "load-balancer.admin"
-  member    = "serviceAccount:${yandex_iam_service_account.k8s_cluster.id}"
-}
-
-# --- 4. Сервисный аккаунт нод ---
-
-# тянет образы из Container Registry
-resource "yandex_iam_service_account" "k8s_nodes" {
-  name        = "k8s-nodes"
-  description = "Managed Kubernetes worker nodes"
-  folder_id   = var.folder_id
-}
-
-resource "yandex_resourcemanager_folder_iam_member" "k8s_nodes_puller" {
-  folder_id = var.folder_id
-  role      = "container-registry.images.puller"
-  member    = "serviceAccount:${yandex_iam_service_account.k8s_nodes.id}"
-}
-
-# --- 5. KMS ---
+# --- 3. KMS ---
 
 resource "yandex_kms_symmetric_key" "state" {
   name              = var.kms_key_name
@@ -89,18 +48,17 @@ resource "yandex_kms_symmetric_key" "state" {
   rotation_period   = "8760h"
 }
 
-# ключ нужен кластеру (шифрование секретов) и tf-backend (запись стейта в бакет)
+# ключ нужен tf-backend для записи стейта в бакет
 resource "yandex_kms_symmetric_key_iam_binding" "encrypters" {
   symmetric_key_id = yandex_kms_symmetric_key.state.id
   role             = "kms.keys.encrypterDecrypter"
 
   members = [
-    "serviceAccount:${yandex_iam_service_account.k8s_cluster.id}",
     "serviceAccount:${yandex_iam_service_account.tf_backend.id}",
   ]
 }
 
-# --- 6. Бакет со стейтами ---
+# --- 4. Бакет со стейтами ---
 
 resource "yandex_storage_bucket" "state" {
   bucket    = var.state_bucket_name

@@ -1,13 +1,5 @@
 # bootstrap/outputs.tf
 
-output "sa_cluster_id" {
-  value = yandex_iam_service_account.k8s_cluster.id
-}
-
-output "sa_nodes_id" {
-  value = yandex_iam_service_account.k8s_nodes.id
-}
-
 output "bucket" {
   value = yandex_storage_bucket.state.bucket
 }
