@@ -8,7 +8,7 @@ kube_network_plugin: calico
 kubeconfig_localhost: true
 
 # внешний адрес мастера попадает в SAN сертификата API
-# адрес мастера берётся из инвентаря — ничего не хардкодим
+# адрес мастера берётся из инвентаря - ничего не хардкодим
 supplementary_addresses_in_ssl_keys:
   - "{{ hostvars['master'].ansible_host }}"
 

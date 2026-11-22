@@ -80,7 +80,7 @@ resource "yandex_vpc_security_group_rule" "k8s_self" {
   predefined_target      = "self_security_group"
 }
 
-# ALB ходит к целям со своих адресов, поэтому источник — его группа безопасности
+# ALB ходит к целям со своих адресов, поэтому источник - его группа безопасности
 resource "yandex_vpc_security_group_rule" "k8s_app_nodeport" {
   security_group_binding = yandex_vpc_security_group.k8s.id
   direction              = "ingress"

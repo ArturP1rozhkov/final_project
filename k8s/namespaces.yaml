@@ -5,7 +5,7 @@ kind: Namespace
 metadata:
   name: app
   labels:
-    # приложение — обычный nginx, privileged не нужен
+    # приложение - обычный nginx, privileged не нужен
     pod-security.kubernetes.io/enforce: baseline
     pod-security.kubernetes.io/warn: restricted
 ---
