@@ -1,5 +1,5 @@
 # infra/network.tf
-
+# проверка terraform pipeline
 # --- 1. Сеть ---
 
 resource "yandex_vpc_network" "this" {
