@@ -1,9 +1,6 @@
 # compute/data.tf
 
 locals {
-  # ru-central1-b недоступна с 08.10.2026, вместо неё используем ru-central1-e
-  zones = ["ru-central1-a", "ru-central1-d", "ru-central1-e"]
-
   ssh_public_key = trimspace(file(pathexpand(var.ssh_public_key_path)))
 }
 
