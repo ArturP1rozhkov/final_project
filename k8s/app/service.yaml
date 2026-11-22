@@ -1,0 +1,17 @@
+# k8s/app/service.yaml
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: app
+  namespace: app
+  labels:
+    app.kubernetes.io/name: app
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: app
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

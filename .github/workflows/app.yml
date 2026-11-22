@@ -1,0 +1,82 @@
+# .github/workflows/app.yml
+
+name: app
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  IMAGE: cr.yandex/${{ secrets.YC_REGISTRY_ID }}/final-project-app
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: короткий sha
+        id: vars
+        run: echo "sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: вход в реестр
+        env:
+          YC_SA_KEY_JSON: ${{ secrets.YC_SA_KEY_JSON }}
+        run: printf '%s' "$YC_SA_KEY_JSON" | docker login --username json_key --password-stdin cr.yandex
+
+      - name: сборка
+        run: |
+          docker build \
+            --build-arg APP_VERSION=sha-${{ steps.vars.outputs.sha }} \
+            --build-arg BUILD_DATE="$(date -u +%F)" \
+            -t "$IMAGE:sha-${{ steps.vars.outputs.sha }}" \
+            -t "$IMAGE:latest" \
+            app
+
+      - name: push
+        if: github.event_name == 'push'
+        run: |
+          docker push "$IMAGE:sha-${{ steps.vars.outputs.sha }}"
+          docker push "$IMAGE:latest"
+
+  deploy:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: ключ и ssh_config
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          BASTION_IP: ${{ secrets.BASTION_IP }}
+          MASTER_IP: ${{ secrets.MASTER_IP }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_k8s
+          chmod 600 ~/.ssh/id_k8s
+          {
+            echo "Host bastion"
+            echo "  HostName $BASTION_IP"
+            echo "  User ansible"
+            echo "  IdentityFile ~/.ssh/id_k8s"
+            echo "  IdentitiesOnly yes"
+            echo "  StrictHostKeyChecking no"
+            echo "Host master"
+            echo "  HostName $MASTER_IP"
+            echo "  User ansible"
+            echo "  IdentityFile ~/.ssh/id_k8s"
+            echo "  IdentitiesOnly yes"
+            echo "  ProxyJump bastion"
+            echo "  StrictHostKeyChecking no"
+          } > ~/.ssh/config
+          chmod 600 ~/.ssh/config
+
+      - name: деплой
+        run: |
+          tag="sha-${GITHUB_SHA::7}"
+          ssh master "sudo kubectl --kubeconfig /etc/kubernetes/admin.conf -n app set image deployment/app app=${IMAGE}:${tag}"
+          ssh master "sudo kubectl --kubeconfig /etc/kubernetes/admin.conf -n app rollout status deployment/app --timeout=180s"

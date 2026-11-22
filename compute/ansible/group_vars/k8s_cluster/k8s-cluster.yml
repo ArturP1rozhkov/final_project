@@ -1,0 +1,15 @@
+---
+# override поверх дефолтов kubespray
+
+kube_version: 1.31.4
+kube_network_plugin: calico
+
+# kubeconfig забираем на рабочую машину
+kubeconfig_localhost: true
+
+# внешний адрес мастера попадает в SAN сертификата API
+# адрес мастера берётся из инвентаря — ничего не хардкодим
+supplementary_addresses_in_ssl_keys:
+  - "{{ hostvars['master'].ansible_host }}"
+
+controlPlaneEndpoint: "{{ hostvars['master'].ansible_host }}:6443"

@@ -1,0 +1,11 @@
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+.backend.hcl
+*.tfvars
+inventory.yml
+ssh_config
+authorized_key.json
+key.json

@@ -1,0 +1,4 @@
+# infra/terraform.tfvars.example
+
+# IP рабочей машины, с которого доступен Kubernetes API
+admin_cidr = "203.0.113.10/32"

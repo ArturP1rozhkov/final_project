@@ -1,0 +1,11 @@
+# compute/terraform.tfvars.example
+
+# те же ключи, что в .backend.hcl: нужны, чтобы прочитать стейт infra
+state_access_key = "<access_key>"
+state_secret_key = "<secret_key>"
+
+# путь к публичному ключу, который попадёт пользователю ansible
+# ssh_public_key_path = "~/.ssh/id_ed25519.pub"
+
+# перед защитой переключить на false
+# preemptible = false

@@ -1,0 +1,21 @@
+Host bastion
+    HostName ${bastion_ip}
+    User ${ansible_user}
+    IdentityFile ${ssh_private_key_path}
+    IdentitiesOnly yes
+    StrictHostKeyChecking accept-new
+    UserKnownHostsFile /dev/null
+    ServerAliveInterval 30
+    ServerAliveCountMax 3
+    ConnectTimeout 30
+
+Host 10.10.*
+    User ${ansible_user}
+    IdentityFile ${ssh_private_key_path}
+    IdentitiesOnly yes
+    ProxyJump bastion
+    StrictHostKeyChecking accept-new
+    UserKnownHostsFile /dev/null
+    ServerAliveInterval 30
+    ServerAliveCountMax 3
+    ConnectTimeout 30

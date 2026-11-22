@@ -1,0 +1,18 @@
+# compute/.backend.hcl.example
+# скопировать в .backend.hcl и подставить значения из terraform output в bootstrap/
+
+bucket     = "final-project-tfstate-b1g3g3a6ro9rr9hd0mvm"
+key        = "compute/terraform.tfstate"
+region     = "ru-central1"
+access_key = "<access_key>"
+secret_key = "<secret_key>"
+
+endpoints = {
+  s3 = "https://storage.yandexcloud.net"
+}
+
+skip_region_validation      = true
+skip_credentials_validation = true
+skip_requesting_account_id  = true
+skip_s3_checksum            = true
+use_lockfile                = true

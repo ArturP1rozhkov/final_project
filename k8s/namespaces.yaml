@@ -1,0 +1,26 @@
+# k8s/namespaces.yaml
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: app
+  labels:
+    # приложение — обычный nginx, privileged не нужен
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/warn: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    # node-exporter работает с hostNetwork и hostPort
+    pod-security.kubernetes.io/enforce: privileged
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ingress-nginx
+  labels:
+    # контроллер слушает 80 и 443 прямо на хосте
+    pod-security.kubernetes.io/enforce: privileged

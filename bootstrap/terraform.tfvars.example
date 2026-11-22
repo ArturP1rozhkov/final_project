@@ -1,0 +1,12 @@
+# bootstrap/terraform.tfvars.example
+
+# значения по умолчанию уже заданы в variables.tf,
+# файл нужен только чтобы переопределить их под другой каталог
+
+cloud_id          = "b1g3g3a6ro9rr9hd0mvm"
+folder_id         = "b1grsjmidldjs2rmkgd0"
+default_zone      = "ru-central1-a"
+state_bucket_name = "final-project-tfstate-b1g3g3a6ro9rr9hd0mvm"
+
+# ID сервисного аккаунта tf-terraform
+tf_sa_id = "<ID существующего сервисного аккаунта tf-terraform>"
