@@ -81,7 +81,7 @@ variable "ansible_user" {
 variable "bastion_name" {
   type        = string
   default     = "final-project-bastion"
-  description = "Bastion host and reserved address name"
+  description = "Bastion VM name and hostname"
 }
 
 # доступ к стейту infra: те же ключи, что в .backend.hcl
