@@ -36,7 +36,7 @@ variable "subnets" {
 
 variable "admin_cidr" {
   type        = string
-  description = "Admin IP allowed to reach the Kubernetes API"
+  description = "Admin IP allowed to reach the bastion over SSH"
 }
 
 variable "registry_name" {
