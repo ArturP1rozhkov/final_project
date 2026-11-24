@@ -2,18 +2,9 @@
 
 name: terraform
 
+# включается после контрольной раскатки, чтобы пуш не менял живой стенд
 on:
-  pull_request:
-    paths:
-      - "infra/**"
-      - "compute/**"
-      - ".github/workflows/terraform.yml"
-  push:
-    branches: [main]
-    paths:
-      - "infra/**"
-      - "compute/**"
-      - ".github/workflows/terraform.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read

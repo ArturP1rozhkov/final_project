@@ -10,7 +10,7 @@ prometheus:
       limits:
         cpu: 500m
         memory: 1Gi
-    # диск ноды 20 ГБ, отдельный PVC не заводим — emptyDir
+    # диск ноды 20 ГБ, отдельный PVC не заводим - emptyDir
     storageSpec: {}
 
 grafana:
@@ -47,7 +47,7 @@ alertmanager:
         memory: 128Mi
 
 # etcd, controller-manager и scheduler на kubespray слушают 127.0.0.1,
-# scrape до них не доходит — мёртвые таргеты не держим
+# scrape до них не доходит - мёртвые таргеты не держим
 kubeEtcd:
   enabled: false
 kubeControllerManager:

@@ -20,6 +20,14 @@ output "alb_sg_id" {
   value = yandex_vpc_security_group.alb.id
 }
 
+output "bastion_ip" {
+  value = yandex_vpc_address.bastion.external_ipv4_address[0].address
+}
+
+output "alb_ip" {
+  value = yandex_vpc_address.alb.external_ipv4_address[0].address
+}
+
 output "registry_id" {
   value = yandex_container_registry.this.id
 }
